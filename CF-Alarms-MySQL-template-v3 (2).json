@@ -1,0 +1,422 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "AWS CloudFormation template to create Alarms on a MYSLQ RDS instance",
+  "Metadata": {
+    "AWS::CloudFormation::Interface": {
+      "ParameterGroups": [
+        {
+          "Label": {
+            "default": "Amazon Objects Identification"
+          },
+          "Parameters": [
+            "DBInstance",
+            "TopicARN"
+          ]
+        },
+        {
+          "Label": {
+            "default": "Alert description Items"
+          },
+          "Parameters": [
+            "AdHostname",
+            "AdTypeIncident",
+            "AdRoute"
+          ]
+        },
+        {
+          "Label": {
+            "default": "Thresholds"
+          },
+          "Parameters": [
+            "ThresholdCPU",
+            "ThresholdFreeMemory",
+            "ThresholdFreeStorage",
+            "ThresholdReadLatency",
+            "ThresholdWriteLatency",
+            "ThresholdSwapUsage"
+          ]
+        }
+      ],
+      "ParameterLabels": {
+        "DBInstance": {
+          "default": "DB Instance name"
+        },
+        "TopicARN": {
+          "default": "Topic ARN"
+        },
+        "AdHostname": {
+          "default": "Alarm description Hostname"
+        },
+        "AdTypeIncident": {
+          "default": "Alarm description Type of Incident"
+        },
+        "AdRoute": {
+          "default": "Alarm description Route"
+        },
+        "ThresholdCPU": {
+          "default": "CPU Threshold"
+        },
+        "ThresholdFreeMemory": {
+          "default": "Available Memory Threshold"
+        },
+        "ThresholdFreeStorage": {
+          "default": "Available Storage Threshold"
+        },
+        "ThresholdReadLatency": {
+          "default": "Read Latency Threshold"
+        },
+        "ThresholdWriteLatency": {
+          "default": "Write Latency Threshold"
+        },
+        "ThresholdSwapUsage": {
+          "default": "Swap Usage Threshold"
+        }
+      }
+    }
+  },
+  "Parameters": {
+    "DBInstance": {
+      "Default": "testmonitor-rds-mysql",
+      "Description": "Name of the MYSQL instance where the alerts will be configured.",
+      "Type": "String",
+      "MinLength": "1",
+      "MaxLength": "128"
+    },
+    "TopicARN": {
+      "Default": "arn:aws:sns:eu-west-3:040110570815:fer-test-TOPIC-20230413a",
+      "Description": "Topic ARN where alerts will be forwarded",
+      "Type": "String",
+      "MinLength": "1",
+      "MaxLength": "128"
+    },
+    "AdHostname": {
+      "Default": "yvav1112",
+      "Description": "Hostname for the Alarm description (used for PSASM incident creation criteria)",
+      "Type": "String",
+      "MinLength": "1",
+      "MaxLength": "128"
+    },
+    "AdTypeIncident": {
+      "Default": "appli=PACIFIC",
+      "Description": "Type of Incident for the Alarm description (appli=PACIFIC, soft=UNIVERSE, hard ) (used for PSASM incident creation criteria)",
+      "Type": "String",
+      "MinLength": "1",
+      "MaxLength": "128"
+    },
+    "AdRoute": {
+      "Default": "tai=pilotage",
+      "Description": "Route - tai for the Alarm description: (route: tai=etudes) (used for PSASM incident creation criteria) ",
+      "Type": "String",
+      "MinLength": "1",
+      "MaxLength": "128"
+    },
+    "ThresholdCPU": {
+      "Default": "95",
+      "Description": "CPU continuous percentage usage threshold (%)",
+      "Type": "String",
+      "MinLength": "1",
+      "MaxLength": "128"
+    },
+    "ThresholdFreeMemory": {
+      "Default": "2147483648",
+      "Description": "Available physical memory threshold (bytes)",
+      "Type": "String",
+      "MinLength": "1",
+      "MaxLength": "128"
+    },
+    "ThresholdFreeStorage": {
+      "Default": "10737418240",
+      "Description": "Available storage threshold (bytes)",
+      "Type": "String",
+      "MinLength": "1",
+      "MaxLength": "128"
+    },
+    "ThresholdReadLatency": {
+      "Default": "100",
+      "Description": "Read latency threshold (miliseconds) ",
+      "Type": "String",
+      "MinLength": "1",
+      "MaxLength": "128"
+    },
+    "ThresholdWriteLatency": {
+      "Default": "100",
+      "Description": "Write latency threshold (miliseconds) ",
+      "Type": "String",
+      "MinLength": "1",
+      "MaxLength": "128"
+    },
+    "ThresholdSwapUsage": {
+      "Default": "3758096384",
+      "Description": "Threshold of the amount of swap space used on the DB (bytes) ",
+      "Type": "String",
+      "MinLength": "1",
+      "MaxLength": "128"
+    }
+  },
+  "Resources": {
+    "CWAL03": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmName": {
+          "Fn::Sub": "CW-AL-RDS-${DBInstance}-ReadLatency"
+        },
+        "AlarmDescription": {
+          "Fn::Sub": "{\"hostname\": \"${AdHostname}\"\n  , \"shortdesc\": \"Incident: ReadLatency threshold reached in AWS RDS ${DBInstance} \"\n  , \"longdesc\": \"In AWS RDS ${DBInstance} a ${ThresholdReadLatency} miliseconds ReadLatency has been detected. Please check\"\n  , \"typeincident\": \"${AdTypeIncident}\"\n  , \"route\": \"${AdRoute}\"\n}"
+        },
+        "ActionsEnabled": true,
+        "OKActions": [],
+        "AlarmActions": [
+          {
+            "Ref": "TopicARN"
+          }
+        ],
+        "InsufficientDataActions": [],
+        "MetricName": "ReadLatency",
+        "Namespace": "AWS/RDS",
+        "Statistic": "Average",
+        "Dimensions": [
+          {
+            "Name": "DBInstanceIdentifier",
+            "Value": {
+              "Ref": "DBInstance"
+            }
+          }
+        ],
+        "Period": 60,
+        "EvaluationPeriods": 3,
+        "DatapointsToAlarm": 3,
+        "Threshold": {
+          "Ref": "ThresholdReadLatency"
+        },
+        "ComparisonOperator": "GreaterThanThreshold",
+        "TreatMissingData": "missing"
+      }
+    },
+    "CWAL04": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmName": {
+          "Fn::Sub": "CW-AL-RDS-${DBInstance}-WriteLatency"
+        },
+        "AlarmDescription": {
+          "Fn::Sub": "{\"hostname\": \"${AdHostname}\"\n  , \"shortdesc\": \"Incident: WriteLatency threshold reached in AWS RDS ${DBInstance} \"\n  , \"longdesc\": \"In AWS RDS ${DBInstance} a ${ThresholdWriteLatency} miliseconds WriteLatency has been detected. Please check\"\n  , \"typeincident\": \"${AdTypeIncident}\"\n  , \"route\": \"${AdRoute}\"\n}"
+        },
+        "ActionsEnabled": true,
+        "OKActions": [],
+        "AlarmActions": [
+          {
+            "Ref": "TopicARN"
+          }
+        ],
+        "InsufficientDataActions": [],
+        "MetricName": "WriteLatency",
+        "Namespace": "AWS/RDS",
+        "Statistic": "Average",
+        "Dimensions": [
+          {
+            "Name": "DBInstanceIdentifier",
+            "Value": {
+              "Ref": "DBInstance"
+            }
+          }
+        ],
+        "Period": 60,
+        "EvaluationPeriods": 3,
+        "DatapointsToAlarm": 3,
+        "Threshold": {
+          "Ref": "ThresholdWriteLatency"
+        },
+        "ComparisonOperator": "GreaterThanThreshold",
+        "TreatMissingData": "missing"
+      }
+    },
+    "CWAL05": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmName": {
+          "Fn::Sub": "CW-AL-RDS-${DBInstance}-SwapUsage"
+        },
+        "AlarmDescription": {
+          "Fn::Sub": "{\"hostname\": \"${AdHostname}\"\n  , \"shortdesc\": \"Incident: SwapUsage threshold reached in AWS RDS ${DBInstance} \"\n  , \"longdesc\": \"In AWS RDS ${DBInstance} more than ${ThresholdSwapUsage} bytes of SwapUsage has been detected. Please check \"\n  , \"typeincident\": \"${AdTypeIncident}\"\n  , \"route\": \"${AdRoute}\"\n}"
+        },
+        "ActionsEnabled": true,
+        "OKActions": [],
+        "AlarmActions": [
+          {
+            "Ref": "TopicARN"
+          }
+        ],
+        "InsufficientDataActions": [],
+        "MetricName": "SwapUsage",
+        "Namespace": "AWS/RDS",
+        "Statistic": "Average",
+        "Dimensions": [
+          {
+            "Name": "DBInstanceIdentifier",
+            "Value": {
+              "Ref": "DBInstance"
+            }
+          }
+        ],
+        "Period": 60,
+        "EvaluationPeriods": 15,
+        "DatapointsToAlarm": 15,
+        "Threshold": {
+          "Ref": "ThresholdSwapUsage"
+        },
+        "ComparisonOperator": "GreaterThanThreshold",
+        "TreatMissingData": "missing"
+      }
+    },
+    "CWAL06": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmName": {
+          "Fn::Sub": "CW-AL-RDS-${DBInstance}-FreeStorageSpace"
+        },
+        "AlarmDescription": {
+          "Fn::Sub": "{\"hostname\": \"${AdHostname}\"\n  , \"shortdesc\": \"Incident: FreeStorageSpace threshold reached in AWS RDS ${DBInstance} \"\n  , \"longdesc\": \"In AWS RDS ${DBInstance} available storage space minor of ${ThresholdFreeStorage} bytes has been detected \"\n  , \"typeincident\": \"${AdTypeIncident}\"\n  , \"route\": \"${AdRoute}\"\n}"
+        },
+        "ActionsEnabled": true,
+        "OKActions": [],
+        "AlarmActions": [
+          {
+            "Ref": "TopicARN"
+          }
+        ],
+        "InsufficientDataActions": [],
+        "MetricName": "FreeStorageSpace",
+        "Namespace": "AWS/RDS",
+        "Statistic": "Average",
+        "Dimensions": [
+          {
+            "Name": "DBInstanceIdentifier",
+            "Value": {
+              "Ref": "DBInstance"
+            }
+          }
+        ],
+        "Period": 60,
+        "EvaluationPeriods": 3,
+        "DatapointsToAlarm": 3,
+        "Threshold": {
+          "Ref": "ThresholdFreeStorage"
+        },
+        "ComparisonOperator": "LessThanThreshold",
+        "TreatMissingData": "missing"
+      }
+    },
+    "CWAL07": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmName": {
+          "Fn::Sub": "CW-AL-RDS-${DBInstance}-CPUUtilization"
+        },
+        "AlarmDescription": {
+          "Fn::Sub": "{\"hostname\": \"${AdHostname}\"\n  , \"shortdesc\": \"Incident: CPUUtilization threshold reached in AWS RDS ${DBInstance} \"\n  , \"longdesc\": \"In AWS RDS ${DBInstance} has been detected a CPU% usage greater than ${ThresholdCPU}% for more than 1 hour. Please check.  \"\n  , \"typeincident\": \"${AdTypeIncident}\"\n  , \"route\": \"${AdRoute}\"\n}"
+        },
+        "ActionsEnabled": true,
+        "OKActions": [],
+        "AlarmActions": [
+          {
+            "Ref": "TopicARN"
+          }
+        ],
+        "InsufficientDataActions": [],
+        "MetricName": "CPUUtilization",
+        "Namespace": "AWS/RDS",
+        "Statistic": "Average",
+        "Dimensions": [
+          {
+            "Name": "DBInstanceIdentifier",
+            "Value": {
+              "Ref": "DBInstance"
+            }
+          }
+        ],
+        "Period": 60,
+        "EvaluationPeriods": 60,
+        "DatapointsToAlarm": 60,
+        "Threshold": {
+          "Ref": "ThresholdCPU"
+        },
+        "ComparisonOperator": "GreaterThanThreshold",
+        "TreatMissingData": "missing"
+      }
+    },
+    "CWAL08": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmName": {
+          "Fn::Sub": "CW-AL-RDS-${DBInstance}-FreeableMemory"
+        },
+        "AlarmDescription": {
+          "Fn::Sub": "{\"hostname\": \"${AdHostname}\"\n  , \"shortdesc\": \"Incident: FreeableMemory threshold reached in AWS RDS ${DBInstance} \"\n  , \"longdesc\": \"In AWS RDS ${DBInstance} available RAM lower than ${ThresholdFreeMemory} bytes has been detected. Please check. \"\n  , \"typeincident\": \"${AdTypeIncident}\"\n  , \"route\": \"${AdRoute}\"\n}"
+        },
+        "ActionsEnabled": true,
+        "OKActions": [],
+        "AlarmActions": [
+          {
+            "Ref": "TopicARN"
+          }
+        ],
+        "InsufficientDataActions": [],
+        "MetricName": "FreeableMemory",
+        "Namespace": "AWS/RDS",
+        "Statistic": "Average",
+        "Dimensions": [
+          {
+            "Name": "DBInstanceIdentifier",
+            "Value": {
+              "Ref": "DBInstance"
+            }
+          }
+        ],
+        "Period": 60,
+        "EvaluationPeriods": 15,
+        "DatapointsToAlarm": 15,
+        "Threshold": {
+          "Ref": "ThresholdFreeMemory"
+        },
+        "ComparisonOperator": "LessThanThreshold",
+        "TreatMissingData": "missing"
+      }
+    },
+    "CWAL09": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmName": {
+          "Fn::Sub": "CW-AL-RDS-${DBInstance}-NOCPUUtilization"
+        },
+        "AlarmDescription": {
+          "Fn::Sub": "{\"hostname\": \"${AdHostname}\"\n  , \"shortdesc\": \"Incident: NOCPUUtilization detected in AWS RDS ${DBInstance} \"\n  , \"longdesc\": \"In AWS RDS ${DBInstance} NO CPU usage detected. Please check whether instance is running!! \"\n  , \"typeincident\": \"${AdTypeIncident}\"\n  , \"route\": \"${AdRoute}\"\n}"
+        },
+        "ActionsEnabled": true,
+        "OKActions": [],
+        "AlarmActions": [
+          {
+            "Ref": "TopicARN"
+          }
+        ],
+        "InsufficientDataActions": [],
+        "MetricName": "CPUUtilization",
+        "Namespace": "AWS/RDS",
+        "Statistic": "Average",
+        "Dimensions": [
+          {
+            "Name": "DBInstanceIdentifier",
+            "Value": {
+              "Ref": "DBInstance"
+            }
+          }
+        ],
+        "Period": 60,
+        "EvaluationPeriods": 3,
+        "DatapointsToAlarm": 3,
+        "Threshold": 0,
+        "ComparisonOperator": "LessThanOrEqualToThreshold",
+        "TreatMissingData": "breaching"
+      }
+    }
+  }
+}
