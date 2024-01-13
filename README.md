@@ -1,2 +1,2 @@
 # githubrepo01
-primer repositorio creado en github
+mi primer repositorio creado en github
